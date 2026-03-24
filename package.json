@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prestart": "[ -f .prebuild ] \u0026\u0026 sh .prebuild || true",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
