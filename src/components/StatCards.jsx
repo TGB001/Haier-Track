@@ -1,11 +1,12 @@
-import React from 'react';
+import React from "react";
 
 const StatCard = ({ title, value, icon, color }) => {
   const colorStyles = {
-    blue: { bg: '#E0F2FE', text: '#2563EB' },
-    purple: { bg: '#F3E8FF', text: '#7C3AED' },
-    green: { bg: '#D1FAE5', text: '#059669' },
-    gray: { bg: '#F3F4F6', text: '#6B7280' }
+    blue: { bg: "#E0F2FE", text: "#2563EB" },
+    purple: { bg: "#F3E8FF", text: "#7C3AED" },
+    green: { bg: "#D1FAE5", text: "#059669" },
+    orange: { bg: "#FEF3C7", text: "#D97706" },
+    gray: { bg: "#F3F4F6", text: "#6B7280" },
   };
 
   const style = colorStyles[color] || colorStyles.gray;
@@ -20,7 +21,7 @@ const StatCard = ({ title, value, icon, color }) => {
           {title}
         </span>
       </div>
-      <div className="stat-card__value" style={{ color: '#1F2937' }}>
+      <div className="stat-card__value" style={{ color: "#1F2937" }}>
         {value}
       </div>
     </div>
@@ -28,7 +29,13 @@ const StatCard = ({ title, value, icon, color }) => {
 };
 
 const StatCards = ({ data }) => {
-  const { totalRecords, clickCount, orderCount, activityCount } = data;
+  const {
+    totalRecords,
+    clickCount,
+    orderCount,
+    totalUserCount,
+    activityCount,
+  } = data;
 
   return (
     <div className="stat-cards">
@@ -49,6 +56,12 @@ const StatCards = ({ data }) => {
         value={orderCount || 0}
         icon="🔔"
         color="purple"
+      />
+      <StatCard
+        title="总参与用户数"
+        value={totalUserCount || 0}
+        icon="👥"
+        color="orange"
       />
       <StatCard
         title="活动数量"
