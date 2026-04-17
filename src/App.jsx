@@ -430,16 +430,74 @@ const App = () => {
           }
         }
       } else if (queryType === "pins") {
-        response = await zuhegouApi.queryProductPins(params);
-        // 提取数据
-        if (response.data) {
-          response = response.data;
+        // 处理多个skuId的情况
+        if (params.skuId && params.skuId.includes(",")) {
+          const skuIds = params.skuId
+            .split(",")
+            .map((id) => id.trim())
+            .filter((id) => id);
+          if (skuIds.length === 0) {
+            throw new Error("请输入有效的SKU ID");
+          }
+
+          // 按次序请求接口
+          const responses = [];
+          for (const skuId of skuIds) {
+            const singleResponse = await zuhegouApi.queryProductPins({
+              ...params,
+              skuId,
+            });
+            // 提取数据
+            const data = singleResponse.data
+              ? singleResponse.data
+              : singleResponse;
+            responses.push({
+              skuId,
+              pin_list: data.pin_list || [],
+            });
+          }
+          response = { sku_pins_list: responses };
+        } else {
+          response = await zuhegouApi.queryProductPins(params);
+          // 提取数据
+          if (response.data) {
+            response = response.data;
+          }
         }
       } else if (queryType === "products") {
-        response = await zuhegouApi.queryUserProducts(params);
-        // 提取数据
-        if (response.data) {
-          response = response.data;
+        // 处理多个pin的情况
+        if (params.pin && params.pin.includes(",")) {
+          const pins = params.pin
+            .split(",")
+            .map((p) => p.trim())
+            .filter((p) => p);
+          if (pins.length === 0) {
+            throw new Error("请输入有效的用户PIN");
+          }
+
+          // 按次序请求接口
+          const responses = [];
+          for (const pin of pins) {
+            const singleResponse = await zuhegouApi.queryUserProducts({
+              ...params,
+              pin,
+            });
+            // 提取数据
+            const data = singleResponse.data
+              ? singleResponse.data
+              : singleResponse;
+            responses.push({
+              pin,
+              skuId_list: data.skuId_list || [],
+            });
+          }
+          response = { pin_skus_list: responses };
+        } else {
+          response = await zuhegouApi.queryUserProducts(params);
+          // 提取数据
+          if (response.data) {
+            response = response.data;
+          }
         }
       }
       console.log("Zuhegou response data:", response);
@@ -454,69 +512,109 @@ const App = () => {
   };
 
   const handleZuhegouExport = async (data) => {
-    let content = "";
-    let fileName = "";
-
-    if (zuhegouQueryType === "count" && data.sku_count_list) {
-      content = "SKU ID,查询次数\n";
-      data.sku_count_list.forEach((item) => {
-        content += `${item.skuId},${item.count}\n`;
-      });
-      fileName = "zuhegou_sku_counts.csv";
-    } else if (zuhegouQueryType === "pins") {
-      content = data.pin_list.join("\n");
-      fileName = "zuhegou_users.csv";
-    } else if (zuhegouQueryType === "products") {
-      content = data.skuId_list.join("\n");
-      fileName = "zuhegou_products.csv";
-    }
-
     try {
+      let directoryHandle = null;
+
+      // 优先获取目录句柄
       if ("showDirectoryPicker" in window) {
-        const directoryHandle = await window.showDirectoryPicker({
+        directoryHandle = await window.showDirectoryPicker({
           mode: "readwrite",
           id: "zuhegou-export",
           startIn: "downloads",
         });
+      }
 
-        const fileHandle = await directoryHandle.getFileHandle(fileName, {
-          create: true,
+      // 处理多个skuId或pin的情况
+      if (zuhegouQueryType === "count" && data.sku_count_list) {
+        // 导出单个汇总文件
+        let content = "SKU ID,查询次数\n";
+        data.sku_count_list.forEach((item) => {
+          content += `${item.skuId},${item.count}\n`;
         });
-        const writable = await fileHandle.createWritable();
-        await writable.write("\uFEFF" + content);
-        await writable.close();
+        await saveFile(directoryHandle, "zuhegou_sku_counts.csv", content);
 
-        alert("文件已成功导出到选定的文件夹");
-      } else if ("showSaveFilePicker" in window) {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: fileName,
-          types: [
-            {
-              description: "CSV Files",
-              accept: {
-                "text/csv": [".csv"],
-              },
-            },
-          ],
-        });
-        const writable = await handle.createWritable();
-        await writable.write("\uFEFF" + content);
-        await writable.close();
-      } else {
-        const csvContent =
-          "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(content);
-        const link = document.createElement("a");
-        link.setAttribute("href", csvContent);
-        link.setAttribute("download", fileName);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // 导出多个单独文件
+        for (const item of data.sku_count_list) {
+          const fileContent = `${item.skuId},${item.count}\n`;
+          await saveFile(
+            directoryHandle,
+            `skuId--${item.skuId}.csv`,
+            fileContent,
+          );
+        }
+        alert(`已成功导出 ${data.sku_count_list.length + 1} 个文件`);
+      } else if (zuhegouQueryType === "pins") {
+        if (data.sku_pins_list) {
+          // 多个skuId的情况，导出多个文件
+          for (const group of data.sku_pins_list) {
+            const content = (group.pin_list || []).join("\n");
+            await saveFile(
+              directoryHandle,
+              `skuId--${group.skuId}.csv`,
+              content,
+            );
+          }
+          alert(`已成功导出 ${data.sku_pins_list.length} 个文件`);
+        } else {
+          // 单个skuId的情况
+          const content = (data.pin_list || []).join("\n");
+          await saveFile(directoryHandle, "zuhegou_users.csv", content);
+          alert("文件已成功导出");
+        }
+      } else if (zuhegouQueryType === "products") {
+        if (data.pin_skus_list) {
+          // 多个pin的情况，导出多个文件
+          for (const group of data.pin_skus_list) {
+            const content = (group.skuId_list || []).join("\n");
+            await saveFile(directoryHandle, `pin--${group.pin}.csv`, content);
+          }
+          alert(`已成功导出 ${data.pin_skus_list.length} 个文件`);
+        } else {
+          // 单个pin的情况
+          const content = (data.skuId_list || []).join("\n");
+          await saveFile(directoryHandle, "zuhegou_products.csv", content);
+          alert("文件已成功导出");
+        }
       }
     } catch (err) {
-      console.error("Export error:", err);
-      if (err.name !== "AbortError") {
-        alert("导出失败，请重试");
-      }
+      console.error("导出失败:", err);
+      alert("导出失败: " + err.message);
+    }
+  };
+
+  // 辅助函数：保存文件
+  const saveFile = async (directoryHandle, fileName, content) => {
+    if (directoryHandle) {
+      const fileHandle = await directoryHandle.getFileHandle(fileName, {
+        create: true,
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write("\uFEFF" + content);
+      await writable.close();
+    } else if ("showSaveFilePicker" in window) {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [
+          {
+            description: "CSV Files",
+            accept: {
+              "text/csv": [".csv"],
+            },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write("\uFEFF" + content);
+      await writable.close();
+    } else {
+      const csvContent =
+        "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(content);
+      const link = document.createElement("a");
+      link.setAttribute("href", csvContent);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 

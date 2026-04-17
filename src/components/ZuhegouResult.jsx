@@ -78,7 +78,6 @@ const ZuhegouResult = ({ data, queryType, onExport }) => {
   }
 
   if (queryType === "pins") {
-    const pinList = data.pin_list || [];
     return (
       <div className="zuhegou-result">
         <div className="result-header">
@@ -88,31 +87,59 @@ const ZuhegouResult = ({ data, queryType, onExport }) => {
           </button>
         </div>
         <div className="result-content">
-          <div className="result-summary">
-            <span className="summary-label">总用户数：</span>
-            <span className="summary-value">{formatNumber(pinList.length)}</span>
-          </div>
-          <div className="result-list">
-            {pinList.length === 0 ? (
-              <div className="empty-state">
-                <p className="empty-text">暂无用户数据</p>
-              </div>
-            ) : (
-              pinList.map((pin, index) => (
-                <div key={index} className="result-item">
-                  <span className="item-index">{index + 1}</span>
-                  <span className="item-value">{pin}</span>
+          {data.sku_pins_list ? (
+            <div className="result-groups">
+              {data.sku_pins_list.map((group, groupIndex) => (
+                <div key={groupIndex} className="result-group">
+                  <div className="group-header">
+                    <span className="group-title">SKU ID: {group.skuId}</span>
+                    <span className="group-count">用户数: {formatNumber((group.pin_list || []).length)}</span>
+                  </div>
+                  <div className="result-list">
+                    {(group.pin_list || []).length === 0 ? (
+                      <div className="empty-state">
+                        <p className="empty-text">暂无用户数据</p>
+                      </div>
+                    ) : (
+                      (group.pin_list || []).map((pin, index) => (
+                        <div key={index} className="result-item">
+                          <span className="item-index">{index + 1}</span>
+                          <span className="item-value">{pin}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="result-summary">
+                <span className="summary-label">总用户数：</span>
+                <span className="summary-value">{formatNumber((data.pin_list || []).length)}</span>
+              </div>
+              <div className="result-list">
+                {(data.pin_list || []).length === 0 ? (
+                  <div className="empty-state">
+                    <p className="empty-text">暂无用户数据</p>
+                  </div>
+                ) : (
+                  (data.pin_list || []).map((pin, index) => (
+                    <div key={index} className="result-item">
+                      <span className="item-index">{index + 1}</span>
+                      <span className="item-value">{pin}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
   }
 
   if (queryType === "products") {
-    const skuIdList = data.skuId_list || [];
     return (
       <div className="zuhegou-result">
         <div className="result-header">
@@ -122,24 +149,53 @@ const ZuhegouResult = ({ data, queryType, onExport }) => {
           </button>
         </div>
         <div className="result-content">
-          <div className="result-summary">
-            <span className="summary-label">总商品数：</span>
-            <span className="summary-value">{formatNumber(skuIdList.length)}</span>
-          </div>
-          <div className="result-list">
-            {skuIdList.length === 0 ? (
-              <div className="empty-state">
-                <p className="empty-text">暂无商品数据</p>
-              </div>
-            ) : (
-              skuIdList.map((skuId, index) => (
-                <div key={index} className="result-item">
-                  <span className="item-index">{index + 1}</span>
-                  <span className="item-value">{skuId}</span>
+          {data.pin_skus_list ? (
+            <div className="result-groups">
+              {data.pin_skus_list.map((group, groupIndex) => (
+                <div key={groupIndex} className="result-group">
+                  <div className="group-header">
+                    <span className="group-title">用户 PIN: {group.pin}</span>
+                    <span className="group-count">商品数: {formatNumber((group.skuId_list || []).length)}</span>
+                  </div>
+                  <div className="result-list">
+                    {(group.skuId_list || []).length === 0 ? (
+                      <div className="empty-state">
+                        <p className="empty-text">暂无商品数据</p>
+                      </div>
+                    ) : (
+                      (group.skuId_list || []).map((skuId, index) => (
+                        <div key={index} className="result-item">
+                          <span className="item-index">{index + 1}</span>
+                          <span className="item-value">{skuId}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="result-summary">
+                <span className="summary-label">总商品数：</span>
+                <span className="summary-value">{formatNumber((data.skuId_list || []).length)}</span>
+              </div>
+              <div className="result-list">
+                {(data.skuId_list || []).length === 0 ? (
+                  <div className="empty-state">
+                    <p className="empty-text">暂无商品数据</p>
+                  </div>
+                ) : (
+                  (data.skuId_list || []).map((skuId, index) => (
+                    <div key={index} className="result-item">
+                      <span className="item-index">{index + 1}</span>
+                      <span className="item-value">{skuId}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
