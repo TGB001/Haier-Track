@@ -418,18 +418,31 @@ const App = () => {
             });
             responses.push({
               skuId,
-              count: singleResponse.count || 0,
+              count: singleResponse.count || singleResponse.data?.count || 0,
             });
           }
           response = { sku_count_list: responses };
         } else {
           response = await zuhegouApi.queryProductCount(params);
+          // 提取数据
+          if (response.data) {
+            response = response.data;
+          }
         }
       } else if (queryType === "pins") {
         response = await zuhegouApi.queryProductPins(params);
+        // 提取数据
+        if (response.data) {
+          response = response.data;
+        }
       } else if (queryType === "products") {
         response = await zuhegouApi.queryUserProducts(params);
+        // 提取数据
+        if (response.data) {
+          response = response.data;
+        }
       }
+      console.log("Zuhegou response data:", response);
       setZuhegouData(response);
       setZuhegouQueryType(queryType);
     } catch (err) {

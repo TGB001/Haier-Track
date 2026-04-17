@@ -33,6 +33,20 @@ const ZuhegouResult = ({ data, queryType, onExport }) => {
     );
   }
 
+  // 如果没有匹配的queryType，显示原始数据
+  if (!queryType) {
+    return (
+      <div className="zuhegou-result">
+        <div className="result-card">
+          <h3 className="result-title">查询结果</h3>
+          <div className="result-content">
+            <pre className="result-raw-data">{JSON.stringify(data, null, 2)}</pre>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (queryType === "count") {
     return (
       <div className="zuhegou-result">
